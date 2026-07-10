@@ -102,6 +102,163 @@ html, body {
   white-space: nowrap;
 }
 
+/* ─── Header right cluster / update button ─── */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.update-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, transform 0.15s ease;
+}
+.update-btn:hover { border-color: var(--border-hi); color: var(--text); }
+.update-btn:active { transform: scale(0.86); }
+.update-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent-glow); }
+.update-btn svg { transition: transform 0.15s ease; }
+.update-btn.spinning { color: var(--accent); border-color: var(--accent); }
+.update-btn.spinning svg { animation: spin 0.85s linear infinite; }
+.update-btn.pulse { animation: btnPulse 0.42s cubic-bezier(.34,1.56,.64,1); }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes btnPulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+.update-dot {
+  position: absolute;
+  top: -2px; right: -2px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--hot);
+  border: 1.5px solid var(--panel-raised);
+  box-shadow: 0 0 5px rgba(255,138,91,0.6);
+  animation: dotPop 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes dotPop {
+  0%   { transform: scale(0);   opacity: 0; }
+  60%  { transform: scale(1.35); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* ─── Update panel (accordion) ─── */
+.update-panel {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 14px;
+  background: var(--bg);
+  border-bottom: 1px solid transparent;
+  transition:
+    max-height 0.32s cubic-bezier(.4,0,.2,1),
+    opacity 0.22s ease,
+    padding 0.28s ease,
+    border-color 0.28s ease;
+}
+.update-panel.open {
+  max-height: 160px;
+  opacity: 1;
+  padding: 10px 14px;
+  border-bottom-color: var(--border);
+}
+.update-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.update-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.update-status-icon svg { width: 100%; height: 100%; display: block; }
+.update-status-icon.icon-available { color: var(--accent); }
+.update-status-icon.icon-uptodate  { color: var(--cold); }
+.update-status-icon.icon-error     { color: var(--danger); }
+.update-status-icon.icon-loading   { color: var(--muted); }
+.update-status-icon.icon-loading svg { animation: spin 0.85s linear infinite; }
+
+/* new-version icon: gentle infinite float, draws attention without being noisy */
+.update-status-icon.icon-available svg { animation: floatUp 1.3s ease-in-out infinite; }
+@keyframes floatUp {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+/* up-to-date checkmark: draws itself in once */
+.update-status-icon.icon-uptodate .check-path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: drawCheck 0.45s ease forwards 0.05s;
+}
+@keyframes drawCheck { to { stroke-dashoffset: 0; } }
+
+/* error icon: quick shake once */
+.update-status-icon.icon-error svg { animation: shakeIcon 0.4s ease; }
+@keyframes shakeIcon {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-2px); }
+  75%      { transform: translateX(2px); }
+}
+
+.update-status {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.update-status.is-available { color: var(--accent); }
+.update-status.is-error { color: var(--danger); }
+.update-status.fade-in { animation: statusFade 0.28s ease; }
+@keyframes statusFade {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.update-panel-actions {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  transition: max-height 0.28s ease, opacity 0.2s ease, margin-top 0.28s ease;
+}
+.update-panel-actions.show {
+  max-height: 50px;
+  opacity: 1;
+  margin-top: 8px;
+}
+.update-download-btn {
+  width: 100%;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s ease;
+}
+.update-download-btn:hover { background: var(--accent-glow); }
+.update-download-btn:active { transform: scale(0.97); }
+.update-download-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent-glow); }
+
 /* ─── Sections ─── */
 .section { padding: 16px 14px 14px; }
 .section-head {
