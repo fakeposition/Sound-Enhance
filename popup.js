@@ -102,7 +102,11 @@ updateBtn.addEventListener('click', () => {
 
 updateDownloadBtn.addEventListener('click', () => {
   if (!lastUpdateInfo?.zipUrl) return;
-  chrome.downloads.download({ url: lastUpdateInfo.zipUrl, filename: 'Sound-Enhance-update.zip' });
+  const version = lastUpdateInfo.remoteVersion || 'latest';
+  chrome.downloads.download({
+    url: lastUpdateInfo.zipUrl,
+    filename: `Sound Enhance/Enhance ${version}/Sound-Enhance-${version}.zip`,
+  });
   // 置き換え作業をしやすいよう拡張機能ページも開いておく
   chrome.tabs.create({ url: `chrome://extensions/?id=${chrome.runtime.id}` });
 });
