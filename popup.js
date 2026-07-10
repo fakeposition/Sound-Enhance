@@ -12,6 +12,101 @@ const statusDot       = document.getElementById('statusDot');
 const bypassToggle    = document.getElementById('bypassToggle');
 const badgeToggle     = document.getElementById('badgeToggle');
 
+// ── Update checker (GitHub) ───────────────────────────────
+const updateBtn         = document.getElementById('updateBtn');
+const updateDot         = document.getElementById('updateDot');
+const updatePanel       = document.getElementById('updatePanel');
+const updateStatusIcon  = document.getElementById('updateStatusIcon');
+const updateStatus      = document.getElementById('updateStatus');
+const updateActions     = document.getElementById('updateActions');
+const updateDownloadBtn = document.getElementById('updateDownloadBtn');
+
+let lastUpdateInfo = null;
+
+const ICONS = {
+  loading: '<svg viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5A6 6 0 1 0 14 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M13.5 1.5v3.3h-3.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+  available: '<svg viewBox="0 0 16 16" fill="none"><path d="M8 12.5V3.5M4.3 7.2 8 3.5l3.7 3.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+  uptodate: '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.7" stroke="currentColor" stroke-width="1.2" fill="none"/><path class="check-path" d="M4.7 8.3 7 10.6 11.3 5.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+  error: '<svg viewBox="0 0 16 16" fill="none"><path d="M8 2 14.2 13H1.8Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="none"/><path d="M8 6.4v3M8 11.3h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+};
+
+// 同じテキスト/アイコンでも毎回アニメーションを再生させるための小技
+// （クラスを外して reflow を強制してから付け直す）
+function replayAnimation(el, className) {
+  el.classList.remove(className);
+  void el.offsetWidth; // force reflow
+  el.classList.add(className);
+}
+
+function setStatusIcon(kind) {
+  updateStatusIcon.className = 'update-status-icon icon-' + kind;
+  updateStatusIcon.innerHTML = ICONS[kind] || '';
+}
+
+function renderUpdateInfo(info) {
+  lastUpdateInfo = info;
+  if (!info) return;
+
+  updateDot.hidden = !info.available;
+
+  updateStatus.classList.remove('is-available', 'is-error');
+  if (info.error) {
+    setStatusIcon('error');
+    updateStatus.classList.add('is-error');
+    updateStatus.textContent = `確認できませんでした (${info.error})`;
+    updateActions.classList.remove('show');
+  } else if (info.available) {
+    setStatusIcon('available');
+    updateStatus.classList.add('is-available');
+    updateStatus.textContent = `新しいバージョンがあります: v${info.localVersion} → v${info.remoteVersion}`;
+    updateActions.classList.add('show');
+  } else {
+    setStatusIcon('uptodate');
+    updateStatus.textContent = `最新版です (v${info.localVersion})`;
+    updateActions.classList.remove('show');
+  }
+  replayAnimation(updateStatus, 'fade-in');
+}
+
+// popup を開いた時点でキャッシュ済みの結果があればバッジだけ即反映
+// （ネットワークは叩かない。実際のチェックはボタン操作 or 起動時/定期実行）
+chrome.storage.local.get('update_info', (data) => {
+  if (data?.update_info) renderUpdateInfo(data.update_info);
+});
+
+async function runUpdateCheck() {
+  updateBtn.classList.add('spinning');
+  setStatusIcon('loading');
+  updateStatus.classList.remove('is-available', 'is-error');
+  updateStatus.textContent = '確認中…';
+  replayAnimation(updateStatus, 'fade-in');
+  try {
+    const info = await chrome.runtime.sendMessage({ type: 'SOUND_ENHANCE_CHECK_UPDATE' });
+    renderUpdateInfo(info);
+  } catch (e) {
+    setStatusIcon('error');
+    updateStatus.classList.add('is-error');
+    updateStatus.textContent = '確認できませんでした';
+    replayAnimation(updateStatus, 'fade-in');
+  } finally {
+    updateBtn.classList.remove('spinning');
+    replayAnimation(updateBtn, 'pulse');
+  }
+}
+
+updateBtn.addEventListener('click', () => {
+  const willOpen = !updatePanel.classList.contains('open');
+  updatePanel.classList.toggle('open', willOpen);
+  if (willOpen) runUpdateCheck(); // 開いた時だけ最新情報を取りに行く
+});
+
+updateDownloadBtn.addEventListener('click', () => {
+  if (!lastUpdateInfo?.zipUrl) return;
+  chrome.downloads.download({ url: lastUpdateInfo.zipUrl, filename: 'Sound-Enhance-update.zip' });
+  // 置き換え作業をしやすいよう拡張機能ページも開いておく
+  chrome.tabs.create({ url: `chrome://extensions/?id=${chrome.runtime.id}` });
+});
+
 // Effect intensity — scales how strongly the active effect is applied.
 // Stored/sent as an integer percentage (100 = 1.00x, default/current
 // behavior), same convention as volume, range 0–300 (0.00x–3.00x).
