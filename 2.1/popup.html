@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sound Enhance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+    <div class="panel">
+
+      <!-- Header -->
+      <header class="header">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 20 16" fill="none" aria-hidden="true">
+            <rect x="0"  y="6" width="3" height="10" rx="1" fill="var(--accent)"/>
+            <rect x="4.5" y="2" width="3" height="14" rx="1" fill="var(--accent)"/>
+            <rect x="9"  y="0" width="3" height="16" rx="1" fill="var(--accent)"/>
+            <rect x="13.5" y="3" width="3" height="13" rx="1" fill="var(--accent)"/>
+            <rect x="17" y="7" width="3" height="9" rx="1" fill="var(--accent)"/>
+          </svg>
+          <span class="brand-text">SOUND<b>ENHANCE</b></span>
+        </div>
+        <div class="site-badge" id="siteBadge">—</div>
+      </header>
+
+      <!-- Gain Section -->
+      <section class="section gain-section">
+        <div class="section-head">
+          <span class="section-label">GAIN</span>
+          <span class="gain-readout" id="gainReadout"><span id="volumeDisplay">100</span><span class="unit">%</span></span>
+        </div>
+
+        <div class="meter-wrap">
+          <input type="range" id="volumeSlider" min="0" max="600" value="100" class="slider-input"
+                 aria-label="Gain percentage" />
+          <div class="meter-track">
+            <div class="meter-mask" id="meterMask"></div>
+            <div class="meter-segments" id="meterSegments"></div>
+          </div>
+        </div>
+
+        <div class="meter-scale">
+          <span>0</span>
+          <span>100</span>
+          <span>300</span>
+          <span>600</span>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Intensity Section -->
+      <section class="section intensity-section">
+        <div class="section-head">
+          <span class="section-label">EFFECT INTENSITY</span>
+          <span class="gain-readout" id="intensityReadout"><span id="intensityDisplay">1.00</span><span class="unit">x</span></span>
+        </div>
+
+        <div class="meter-wrap">
+          <input type="range" id="intensitySlider" min="0" max="300" value="100" class="slider-input"
+                 aria-label="Effect intensity" />
+          <div class="meter-track intensity-track">
+            <div class="meter-mask" id="intensityMask"></div>
+          </div>
+        </div>
+
+        <div class="meter-scale">
+          <span>0x</span>
+          <span>1x</span>
+          <span>2x</span>
+          <span>3x</span>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Effects Section -->
+      <section class="section effects-section">
+        <div class="section-head">
+          <span class="section-label">SIGNAL CHAIN</span>
+        </div>
+        <div class="effects-grid" id="effectsGrid">
+
+          <button class="effect-btn active" data-effect="none">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8h12M8 2v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+                <circle cx="8" cy="8" r="2" fill="currentColor"/>
+              </svg>
+            </div>
+            <span>Flat</span>
+          </button>
+
+          <button class="effect-btn" data-effect="3d">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <ellipse cx="8" cy="8" rx="6" ry="3" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M2 8c0-3.3 2.7-6 6-6s6 2.7 6 6-2.7 6-6 6-6-2.7-6-6z" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M8 2v12" stroke="currentColor" stroke-width="1.3" stroke-dasharray="2 1.5"/>
+              </svg>
+            </div>
+            <span>3D</span>
+          </button>
+
+          <button class="effect-btn" data-effect="8d">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1 L8 15" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                <path d="M1 8 L15 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                <path d="M3 3 L13 13M13 3 L3 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/>
+                <circle cx="8" cy="8" r="2.5" fill="currentColor" opacity="0.9"/>
+              </svg>
+            </div>
+            <span>8D</span>
+          </button>
+
+          <button class="effect-btn" data-effect="16d">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+                <circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="1" stroke-dasharray="1.5 1.5"/>
+                <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1" stroke-dasharray="1 2"/>
+                <path d="M4 4 L12 12M12 4 L4 12" stroke="currentColor" stroke-width="0.8" opacity="0.3"/>
+              </svg>
+            </div>
+            <span>16D</span>
+          </button>
+
+          <button class="effect-btn" data-effect="live">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8 Q4 4 5 8 Q6 12 7 8 Q8 4 9 8 Q10 12 11 8 Q12 4 13 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+              </svg>
+            </div>
+            <span>Live</span>
+          </button>
+
+          <button class="effect-btn" data-effect="bass">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 11 Q4 5 6 10 Q8 15 10 10 Q12 5 14 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+                <path d="M2 8 Q8 2 14 8" stroke="currentColor" stroke-width="1" opacity="0.3" stroke-linecap="round" fill="none"/>
+              </svg>
+            </div>
+            <span>Bass↑</span>
+          </button>
+
+          <button class="effect-btn" data-effect="treble">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 5 Q8 11 14 5" stroke="currentColor" stroke-width="1" opacity="0.3" stroke-linecap="round" fill="none"/>
+                <path d="M2 8 Q4 12 6 8 Q8 4 10 8 Q12 12 14 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+              </svg>
+            </div>
+            <span>Treble↑</span>
+          </button>
+
+          <button class="effect-btn" data-effect="reverb">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M6 4 L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M9 6 L9 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+                <path d="M12 7 L12 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+                <path d="M3 7 L3 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+              </svg>
+            </div>
+            <span>Reverb</span>
+          </button>
+
+          <button class="effect-btn" data-effect="night">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M13 8.5A5.5 5.5 0 1 1 7.5 3c.5 0 1 .06 1.46.18A4 4 0 0 0 13 8.5z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+              </svg>
+            </div>
+            <span>Night</span>
+          </button>
+
+          <button class="effect-btn" data-effect="water">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 10 Q4 7 6 10 Q8 13 10 10 Q12 7 14 10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+                <path d="M2 7 Q4 4 6 7 Q8 10 10 7 Q12 4 14 7" stroke="currentColor" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.45"/>
+                <path d="M4 13 Q6 11 8 13 Q10 11 12 13" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" fill="none" opacity="0.25"/>
+              </svg>
+            </div>
+            <span>Water</span>
+          </button>
+
+          <button class="effect-btn" data-effect="mono">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="1.3"/>
+                <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+              </svg>
+            </div>
+            <span>Mono</span>
+          </button>
+
+          <button class="effect-btn" data-effect="vocal">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2a2.5 2.5 0 0 1 2.5 2.5v3a2.5 2.5 0 0 1-5 0v-3A2.5 2.5 0 0 1 8 2z" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M4.5 7.5a3.5 3.5 0 0 0 7 0M8 11v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span>Vocal</span>
+          </button>
+
+          <button class="effect-btn" data-effect="loud">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 6h2.5L8 3v10L4.5 10H2V6z" fill="currentColor"/>
+                <path d="M10.5 5.5a4 4 0 0 1 0 5M12.5 3.5a7 7 0 0 1 0 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span>Boost+</span>
+          </button>
+
+          <button class="effect-btn" data-effect="outdoor">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="6" r="2.6" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M8 1.5v1M8 9.5v1M3 6h1M12 6h1M4.6 2.6l.7.7M10.7 2.6l-.7.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                <path d="M1.5 13.5 Q5 10 8 13 Q11 10 14.5 13.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+              </svg>
+            </div>
+            <span>Outdoor</span>
+          </button>
+
+          <button class="effect-btn" data-effect="stadium">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <ellipse cx="8" cy="8" rx="7" ry="4.2" stroke="currentColor" stroke-width="1.2"/>
+                <ellipse cx="8" cy="8" rx="4.3" ry="2.4" stroke="currentColor" stroke-width="1.1"/>
+                <ellipse cx="8" cy="8" rx="1.6" ry="0.9" fill="currentColor"/>
+              </svg>
+            </div>
+            <span>Stadium</span>
+          </button>
+
+          <button class="effect-btn" data-effect="call">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3.2 3.4c.3-.7.9-1.1 1.6-1 .6.1 1.1.6 1.3 1.2l.5 1.5c.2.5 0 1.1-.4 1.5l-.8.8c.5 1.2 1.4 2.1 2.6 2.6l.8-.8c.4-.4 1-.5 1.5-.4l1.5.5c.6.2 1 .7 1.2 1.3.1.7-.3 1.3-1 1.6-3 1.2-6.6-.4-8.5-2.3S2 6.4 3.2 3.4z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span>Call</span>
+          </button>
+
+          <button class="effect-btn" data-effect="lofi">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="1.5" y="3.5" width="13" height="9" rx="1.3" stroke="currentColor" stroke-width="1.2"/>
+                <circle cx="5.5" cy="8" r="1.5" stroke="currentColor" stroke-width="1.1"/>
+                <circle cx="10.5" cy="8" r="1.5" stroke="currentColor" stroke-width="1.1"/>
+                <path d="M5.5 8h5" stroke="currentColor" stroke-width="0.9" opacity="0.5"/>
+              </svg>
+            </div>
+            <span>Lo-Fi</span>
+          </button>
+
+          <button class="effect-btn" data-effect="vacuum">
+            <span class="effect-led"></span>
+            <div class="effect-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="7.5" cy="7.5" r="2.6" stroke="currentColor" stroke-width="1.2"/>
+                <ellipse cx="7.5" cy="7.5" rx="6.6" ry="2.1" stroke="currentColor" stroke-width="1" opacity="0.55" transform="rotate(-18 7.5 7.5)"/>
+                <circle cx="2" cy="2.6" r="0.6" fill="currentColor" opacity="0.7"/>
+                <circle cx="13.6" cy="2.2" r="0.5" fill="currentColor" opacity="0.5"/>
+                <circle cx="13.8" cy="12.2" r="0.6" fill="currentColor" opacity="0.6"/>
+              </svg>
+            </div>
+            <span>Vacuum</span>
+          </button>
+
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Options Section -->
+      <section class="section options-section">
+        <div class="section-head">
+          <span class="section-label">OPTIONS</span>
+        </div>
+
+        <div class="option-row">
+          <div class="option-copy">
+            <span class="option-title">Bypass</span>
+            <span class="option-hint">Play raw audio, keep your preset saved</span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="bypassToggle" />
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </label>
+        </div>
+
+        <div class="option-row">
+          <div class="option-copy">
+            <span class="option-title">Toolbar badge</span>
+            <span class="option-hint">Show gain % on the extension icon</span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="badgeToggle" />
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </label>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <button class="reset-btn" id="resetBtn">Reset site</button>
+        <div class="power-led-wrap">
+          <span class="power-label">ACTIVE</span>
+          <div class="status-dot" id="statusDot"></div>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
