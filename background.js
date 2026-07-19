@@ -135,12 +135,107 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true; // async response
 });
 
+// ─────────────────────────────────────────────────────────
+// [new] chrome.tabCapture ベースの音声処理 (Netflix/Spotify 対応)
+//   Netflix/Spotify は injected.js の AudioNode.connect パッチ（ACX方式）
+//   が機能しない/効かないことが実機確認で判明したため、これらのサイトの
+//   音声処理は content.js の SITE_STRATEGIES で method: 'tabcapture' に
+//   割り当て、ここと offscreen.js を経由する専用パイプラインで処理する。
+//     - content.js: 対象サイトでは MES/ACX を一切試みず、popup からの
+//       音量/エフェクト変更をそのまま SOUND_ENHANCE_TABCAPTURE_UPDATE
+//       としてここへ転送するだけ
+//     - background.js (ここ): オフスクリーンドキュメントを用意し、
+//       タブごとに一度だけ chrome.tabCapture.getMediaStreamId() で
+//       ストリームIDを取得、以降は同じキャプチャを使い回す
+//     - offscreen.js: 実際に getUserMedia でタブ音声を取得し、
+//       Web Audio でゲイン/エフェクトをかけて再生し直す
+//   （tabCapture はページのDRM/Web Audio実装に依存せず、タブの最終
+//     音声出力そのものを横取りするため、ページ内部の構造に関係なく動く）
+const TABCAPTURE_HOSTS = ['netflix.com', 'open.spotify.com'];
+
+function hostNeedsTabCapture(hostname) {
+  return TABCAPTURE_HOSTS.some(h => hostname === h || hostname.endsWith('.' + h));
+}
+
+const OFFSCREEN_URL = 'offscreen.html';
+let offscreenReadyPromise = null; // 多重生成防止
+
+async function ensureOffscreenDocument() {
+  if (offscreenReadyPromise) return offscreenReadyPromise;
+  offscreenReadyPromise = (async () => {
+    const url = chrome.runtime.getURL(OFFSCREEN_URL);
+    const existing = await chrome.runtime.getContexts({
+      contextTypes: ['OFFSCREEN_DOCUMENT'],
+      documentUrls: [url],
+    });
+    if (existing.length > 0) return;
+    await chrome.offscreen.createDocument({
+      url: OFFSCREEN_URL,
+      reasons: ['USER_MEDIA'],
+      justification: 'タブの音声をキャプチャしてゲイン/エフェクトを適用するため（Netflix/Spotify等のDRM保護コンテンツ対応）',
+    });
+  })().catch((e) => {
+    offscreenReadyPromise = null; // 失敗時は次回また作り直せるようにする
+    throw e;
+  });
+  return offscreenReadyPromise;
+}
+
+const tabCaptureStarted = new Set(); // 既にキャプチャ済みの tabId
+
+function stopTabCapture(tabId) {
+  if (!tabCaptureStarted.has(tabId)) return;
+  tabCaptureStarted.delete(tabId);
+  chrome.runtime.sendMessage({ type: 'SOUND_ENHANCE_TABCAPTURE_STOP', target: 'offscreen', tabId }).catch(() => { /* offscreen未起動なら無視 */ });
+}
+
+chrome.tabs.onRemoved.addListener((tabId) => stopTabCapture(tabId));
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type !== 'SOUND_ENHANCE_TABCAPTURE_UPDATE') return;
+  const tabId = sender.tab?.id;
+  if (tabId === undefined) { sendResponse?.({ ok: false }); return; }
+
+  (async () => {
+    try {
+      await ensureOffscreenDocument();
+      if (!tabCaptureStarted.has(tabId)) {
+        const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
+        tabCaptureStarted.add(tabId);
+        await chrome.runtime.sendMessage({
+          type: 'SOUND_ENHANCE_TABCAPTURE_START',
+          target: 'offscreen',
+          tabId, streamId,
+          volume: msg.volume, effect: msg.effect, intensity: msg.intensity,
+        });
+      } else {
+        await chrome.runtime.sendMessage({
+          type: 'SOUND_ENHANCE_TABCAPTURE_APPLY',
+          target: 'offscreen',
+          tabId,
+          volume: msg.volume, effect: msg.effect, intensity: msg.intensity,
+        });
+      }
+      sendResponse?.({ ok: true });
+    } catch (e) {
+      console.debug('[SoundEnhance background] tabCapture update failed:', e);
+      tabCaptureStarted.delete(tabId); // 失敗時は次回また getMediaStreamId から再試行する
+      sendResponse?.({ ok: false, error: String(e) });
+    }
+  })();
+
+  return true; // async response
+});
+
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== 'complete' || !tab.url) return;
 
   let host;
   try { host = new URL(tab.url).hostname; }
   catch { return; }
+
+  // tabcapture対象サイトから離れたら、専有していたタブ音声キャプチャを解放する
+  if (!hostNeedsTabCapture(host)) stopTabCapture(tabId);
 
   let data, state;
   try {
