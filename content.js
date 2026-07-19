@@ -29,22 +29,31 @@
   //       <audio> 要素に createMediaElementSource() を呼ぶと、DRM保護の
   //       ため出力が無音化(tainted)される仕様のため MES は最初から使えない。
   //       injected.js の AudioNode.connect パッチ（ページ自身の
-  //       AudioContext を横取り）だけが有効な経路。
-  //       このパッチは manifest.json 側で world:'MAIN' + document_start の
-  //       content_script として宣言注入されるようになったため、Spotify の
-  //       スクリプトが AudioContext を組み立てるより確実に先にインストール
-  //       される（以前の非同期メッセージ注入だとレースで取り逃す恐れが
-  //       あった）。
+  //       AudioContext を横取り）だけが有効な経路 …… という想定だったが、
+  //       実機確認の結果 Netflix / Spotify では acx-only でも音が変わらない
+  //       ことが判明した。
+  //   [fix] Netflix / Spotify: 'acx-only' → 'tabcapture' に変更。
+  //       Netflix は多くの場合ページがWeb Audioグラフを自前で構築せず、
+  //       ブラウザが復号済み音声を <video> 要素へ直接流し込むだけのため、
+  //       ACXパッチがフックする対象のグラフがそもそも存在しない。
+  //       Spotifyは独自のWeb Audioグラフを構築するが、EME/DRM保護された
+  //       音声をWeb Audio経由で加工しようとするとブラウザ側の保護機構で
+  //       無音化/ブロックされることがある。
+  //       いずれもページ内部の音声処理構造に依存しない chrome.tabCapture
+  //       方式（background.js / offscreen.js 側で実装）に切り替えることで
+  //       対応する。'tabcapture' 指定のサイトでは、この content.js は
+  //       MES/ACXを一切試みず、popupからの音量/エフェクト変更をそのまま
+  //       background.js へ転送するだけになる。
   const SITE_STRATEGIES = {
     'tiktok.com':        { method: 'acx-adaptive', shadowDom: true  },
     'instagram.com':     { method: 'acx-only',      shadowDom: true  },
     'facebook.com':      { method: 'acx-only',      shadowDom: true  },
     'soundcloud.com':    { method: 'acx-only',      shadowDom: false },
-    'open.spotify.com':  { method: 'acx-only',      shadowDom: false },
+    'open.spotify.com':  { method: 'tabcapture',    shadowDom: false },
     'music.youtube.com': { method: 'mes-with-cors', shadowDom: false },
     'youtube.com':       { method: 'mes-with-cors', shadowDom: false },
     'twitch.tv':         { method: 'acx-patch',     shadowDom: false },
-    'netflix.com':       { method: 'acx-only',      shadowDom: false },
+    'netflix.com':       { method: 'tabcapture',    shadowDom: false },
     'primevideo.com':    { method: 'acx-only',      shadowDom: false },
     'amazon.co.jp':      { method: 'acx-only',      shadowDom: false },
     'nicovideo.jp':      { method: 'mes-with-cors', shadowDom: false },
@@ -245,8 +254,29 @@
     }, 'observeExistingShadowRoots');
   }
 
+  // ── [new] tabcapture 方式のヘルパー ────────────────────
+  // 音声処理は一切ここで行わず、background.js -> offscreen.js に丸投げする。
+  function isTabCapture() { return strategy.method === 'tabcapture'; }
+
+  function sendTabCaptureUpdate(volume, effect, intensity) {
+    safe(() => {
+      chrome.runtime.sendMessage({
+        type: 'SOUND_ENHANCE_TABCAPTURE_UPDATE',
+        volume, effect, intensity,
+      }).catch(() => { /* background/offscreen 未準備等は無視 */ });
+    }, 'sendTabCaptureUpdate');
+  }
+
   function connectElement(el) {
     if (connected.has(el) || failedEls.has(el)) return;
+
+    // tabcapture サイトでは MES/ACX を一切試みない
+    // （chrome.tabCapture がタブ音声を丸ごと処理するため不要かつ無意味）
+    if (isTabCapture()) {
+      connected.add(el);
+      activeMethod = 'TabCapture';
+      return;
+    }
 
     // ── 【TikTok修正】acx-only でも play イベントを監視 ──
     // acx-only サイトは injected.js の ACX パッチに依存するが、
@@ -789,6 +819,12 @@
     currentEffect = msg.effect;
     currentIntensity = msg.intensity ?? 100;
 
+    // ── [new] tabcapture サイトは background.js に丸投げして終了
+    if (isTabCapture()) {
+      sendTabCaptureUpdate(msg.volume, msg.effect, currentIntensity);
+      return;
+    }
+
     // ── 【TikTok修正】acx-only でも必ず sendToPage する
     // 旧コードでは acx-only が connectElement で return してしまい
     // sendToPage が呼ばれなかった。メッセージ受信時は常に送る。
@@ -817,6 +853,14 @@
       currentVolume = state.volume;
       currentEffect = state.effect;
       currentIntensity = state.intensity ?? 100;
+
+      // ── [new] tabcapture サイトはページ読み込み時に1回だけ送れば十分
+      // （MES/ACXのようにDOM/AudioContextの出現を待つポーリングは不要）
+      if (isTabCapture()) {
+        activeMethod = 'TabCapture';
+        sendTabCaptureUpdate(state.volume, state.effect, currentIntensity);
+        return;
+      }
 
       const apply = () => {
         // ── 【TikTok修正】acx-only でも必ず sendToPage する
