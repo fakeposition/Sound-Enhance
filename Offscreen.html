@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sound Enhance — offscreen</title>
+</head>
+<body>
+  <!--
+    このページはユーザーには表示されない (chrome.offscreen.createDocument)。
+    chrome.tabCapture で取得したタブ音声の MediaStream を保持し、
+    Web Audio でゲイン/エフェクトをかけてから ctx.destination
+    (= このオフスクリーンドキュメント自身の音声出力) に再生し直す。
+  -->
+  <script src="offscreen.js"></script>
+</body>
+</html>
