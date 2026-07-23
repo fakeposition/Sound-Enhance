@@ -4,6 +4,7 @@ const slider          = document.getElementById('volumeSlider');
 const volDisplay      = document.getElementById('volumeDisplay');
 const gainReadout     = document.getElementById('gainReadout');
 const meterMask       = document.getElementById('meterMask');
+const meterHandle     = document.getElementById('meterHandle');
 const meterSegWrap    = document.getElementById('meterSegments');
 const siteBadge       = document.getElementById('siteBadge');
 const effectBtns      = document.querySelectorAll('.effect-btn');
@@ -117,6 +118,7 @@ updateDownloadBtn.addEventListener('click', () => {
 const intensitySlider  = document.getElementById('intensitySlider');
 const intensityDisplay = document.getElementById('intensityDisplay');
 const intensityMask    = document.getElementById('intensityMask');
+const intensityHandle  = document.getElementById('intensityHandle');
 
 let currentHost  = '';
 let currentTabId = null;
@@ -139,20 +141,33 @@ function getHost(url) {
 
 function updateVolumeColor(val) {
   gainReadout.classList.remove('zone-cold', 'zone-warm', 'zone-hot', 'zone-danger');
-  if (val > 300)      gainReadout.classList.add('zone-danger');
-  else if (val > 200) gainReadout.classList.add('zone-hot');
+  if (val > 600)      gainReadout.classList.add('zone-danger');
+  else if (val > 300) gainReadout.classList.add('zone-hot');
   else if (val > 100) gainReadout.classList.add('zone-warm');
   else                gainReadout.classList.add('zone-cold');
+}
+
+// Same zone concept for the effect-intensity readout, scaled to its
+// own 0–600 (0.00x–6.00x) range.
+const intensityReadout = document.getElementById('intensityReadout');
+function updateIntensityColor(val) {
+  intensityReadout.classList.remove('zone-cold', 'zone-warm', 'zone-hot', 'zone-danger');
+  if (val > 450)      intensityReadout.classList.add('zone-danger');
+  else if (val > 300) intensityReadout.classList.add('zone-hot');
+  else if (val > 100) intensityReadout.classList.add('zone-warm');
+  else                intensityReadout.classList.add('zone-cold');
 }
 
 function updateSliderFill() {
   const pct = (slider.value / slider.max) * 100;
   meterMask.style.width = (100 - pct) + '%';
+  meterHandle.style.left = pct + '%';
 }
 
 function updateIntensityFill() {
   const pct = (intensitySlider.value / intensitySlider.max) * 100;
   intensityMask.style.width = (100 - pct) + '%';
+  intensityHandle.style.left = pct + '%';
 }
 
 function getActiveEffect() {
@@ -216,6 +231,7 @@ async function loadState() {
   intensitySlider.value = intensity;
   intensityDisplay.textContent = (intensity / 100).toFixed(2);
   updateIntensityFill();
+  updateIntensityColor(intensity);
 
   setActiveEffect(state.effect);
 
@@ -311,6 +327,7 @@ intensitySlider.addEventListener('input', () => {
   const effect = getActiveEffect();
   intensityDisplay.textContent = (intensity / 100).toFixed(2);
   updateIntensityFill();
+  updateIntensityColor(intensity);
   updateStatusDot(vol, effect, intensity);
   throttledApplyToTab(vol, effect, intensity);
   debouncedSaveState(vol, effect, intensity);
@@ -351,6 +368,7 @@ resetBtn.addEventListener('click', async () => {
   intensitySlider.value = 100;
   intensityDisplay.textContent = '1.00';
   updateIntensityFill();
+  updateIntensityColor(100);
 
   setActiveEffect('none');
   bypassToggle.checked = false;
